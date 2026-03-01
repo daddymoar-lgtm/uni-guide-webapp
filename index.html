@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Справочник абитуриента</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-2: #f5f5f7;
+    --bg-3: #ebebee;
+    --text: #111118;
+    --text-2: #555566;
+    --text-3: #888899;
+    --accent: #0057FF;
+    --accent-light: #e8efff;
+    --accent-dark: #003fcf;
+    --border: #e2e2e8;
+    --success: #1a7f4f;
+    --warn: #8a4800;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    height: 100dvh;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px 14px;
+    flex-shrink: 0;
+  }
+  .header-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 8px;
+  }
+  .header-back svg { flex-shrink: 0; }
+  .header h1 {
+    font-family: 'IBM Plex Serif', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.25;
+  }
+  .header .subtitle {
+    font-size: 13px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+  .header-home h1 {
+    font-family: 'IBM Plex Serif', serif;
+    font-size: 24px;
+    font-weight: 600;
+  }
+  .header-home p {
+    color: var(--text-2);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* ── SCROLL AREA ── */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 16px 80px;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* ── UNIVERSITY CARD ── */
+  .uni-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .uni-card:active { transform: scale(0.98); }
+  .uni-card:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+
+  .uni-abbr {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    background: var(--accent-light);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--accent);
+    text-align: center;
+    line-height: 1.2;
+  }
+  .uni-info { flex: 1; min-width: 0; }
+  .uni-name {
+    font-family: 'IBM Plex Serif', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .uni-full { font-size: 12px; color: var(--text-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .uni-meta { font-size: 12px; color: var(--text-2); margin-top: 4px; }
+  .uni-arrow { color: var(--text-3); flex-shrink: 0; }
+
+  /* ── STUB BADGE ── */
+  .stub-badge {
+    display: inline-block;
+    background: var(--bg-2);
+    color: var(--text-3);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-top: 4px;
+  }
+
+  /* ── FACULTY LIST ── */
+  .faculty-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .faculty-item:active { transform: scale(0.98); }
+  .faculty-item:hover { border-color: var(--accent); }
+  .faculty-icon {
+    width: 40px; height: 40px;
+    flex-shrink: 0;
+    background: var(--bg-2);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2);
+  }
+  .faculty-info { flex: 1; min-width: 0; }
+  .faculty-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .faculty-count { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+  /* ── SPECIALTY LIST ── */
+  .specialty-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .specialty-item:active { transform: scale(0.98); }
+  .specialty-item:hover { border-color: var(--accent); }
+  .specialty-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .specialty-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .scores-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .score-chip {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    text-align: center;
+  }
+  .score-chip.budget { background: #e6f7ed; }
+  .score-chip.paid { background: var(--bg-2); }
+  .score-chip .label { font-size: 10px; color: var(--text-3); margin-bottom: 1px; }
+  .score-chip .value { font-size: 16px; font-weight: 600; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
+  .score-chip.budget .value { color: var(--success); }
+
+  /* ── SPECIALTY DETAIL ── */
+  .detail-header {
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 20px;
+    flex-shrink: 0;
+  }
+  .detail-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-3);
+    margin-bottom: 6px;
+  }
+  .detail-title {
+    font-family: 'IBM Plex Serif', serif;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text);
+  }
+  .detail-uni { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+
+  .scores-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 16px;
+  }
+  .score-block {
+    background: var(--bg-2);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .score-block.budget { background: #e6f7ed; }
+  .score-block .slabel { font-size: 11px; color: var(--text-3); margin-bottom: 4px; }
+  .score-block .svalue {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .score-block.budget .svalue { color: var(--success); }
+
+  /* ── DIFFICULTY ── */
+  .difficulty-bar-wrap {
+    padding: 0 16px 4px;
+  }
+  .diff-label { font-size: 12px; color: var(--text-3); margin-bottom: 6px; }
+  .diff-bar {
+    height: 6px;
+    background: var(--bg-3);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .diff-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #0057FF, #e05000);
+    transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .diff-num { font-size: 12px; color: var(--text-2); margin-top: 4px; text-align: right; }
+
+  /* ── ACCORDION ── */
+  .accordion {
+    margin: 0 16px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .acc-header {
+    padding: 14px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg);
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .acc-header:hover { background: var(--bg-2); }
+  .acc-header.open { background: var(--accent-light); }
+  .acc-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .acc-icon-wrap {
+    width: 28px; height: 28px;
+    background: var(--bg-2);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+  .acc-header.open .acc-icon-wrap { background: var(--accent); color: white; }
+  .acc-chevron {
+    flex-shrink: 0;
+    color: var(--text-3);
+    transition: transform 0.25s;
+  }
+  .acc-header.open .acc-chevron { transform: rotate(180deg); }
+  .acc-body {
+    display: none;
+    padding: 14px 16px 16px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .acc-body.open { display: block; }
+  .acc-body p {
+    font-size: 14px;
+    color: var(--text-2);
+    line-height: 1.65;
+  }
+  .acc-body ul {
+    list-style: none;
+    padding: 0;
+  }
+  .acc-body ul li {
+    font-size: 13.5px;
+    color: var(--text-2);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+  }
+  .acc-body ul li:last-child { border-bottom: none; }
+  .li-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 7px;
+  }
+  .li-dot.neutral { background: var(--text-3); }
+  .li-dot.good { background: var(--success); }
+  .li-dot.bad { background: #c0392b; }
+
+  /* ── FAVORITES TAB ── */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    text-align: center;
+  }
+  .empty-icon { color: var(--text-3); margin-bottom: 16px; }
+  .empty-title { font-family: 'IBM Plex Serif', serif; font-size: 18px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--text-3); }
+
+  /* ── FAV BUTTON ── */
+  .fav-btn {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-3);
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .fav-btn.active { color: #e05000; border-color: #e05000; background: #fff5f0; }
+
+  /* ── ABOUT TAB ── */
+  .about-section {
+    padding: 0 16px 16px;
+  }
+  .about-block {
+    background: var(--bg-2);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+  .about-block h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .about-block p { font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    display: flex;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: 8px 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 0;
+    color: var(--text-3);
+    transition: color 0.15s;
+    background: none;
+    border: none;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-label { font-size: 10px; font-weight: 500; }
+  .nav-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .nav-item.active .nav-dot { opacity: 1; }
+
+  /* ── FAV CARD ── */
+  .fav-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .fav-item:hover { border-color: var(--accent); }
+  .fav-item-uni { font-size: 11px; color: var(--text-3); margin-bottom: 3px; }
+  .fav-item-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .fav-item-score { font-size: 12px; color: var(--text-2); margin-top: 4px; }
+
+  /* ── TRANSITIONS ── */
+  .screen { animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── SEARCH ── */
+  .search-wrap { padding: 10px 16px 0; }
+  .search-input {
+    width: 100%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px 10px 38px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .search-input:focus { border-color: var(--accent); background: var(--bg); }
+  .search-input::placeholder { color: var(--text-3); }
+  .search-wrap-inner { position: relative; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════ SCREEN: UNIVERSITIES ══════════════ -->
+  <div class="screen active" id="screen-universities">
+    <div class="header header-home">
+      <h1>Справочник<br>абитуриента</h1>
+      <p>Университеты Беларуси — 2024</p>
+    </div>
+    <div class="search-wrap">
+      <div class="search-wrap-inner">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="uni-search" placeholder="Поиск университета...">
+      </div>
+    </div>
+    <div class="scroll-area" id="uni-list"></div>
+  </div>
+
+  <!-- ══════════════ SCREEN: FACULTIES ══════════════ -->
+  <div class="screen" id="screen-faculties">
+    <div class="header">
+      <button class="header-back" onclick="goBack()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Университеты
+      </button>
+      <h1 id="fac-header-title"></h1>
+      <div class="subtitle" id="fac-header-sub"></div>
+    </div>
+    <div class="scroll-area" id="fac-list"></div>
+  </div>
+
+  <!-- ══════════════ SCREEN: SPECIALTIES ══════════════ -->
+  <div class="screen" id="screen-specialties">
+    <div class="header">
+      <button class="header-back" onclick="goToFaculties()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Факультеты
+      </button>
+      <h1 id="spec-header-title"></h1>
+    </div>
+    <div class="scroll-area" id="spec-list"></div>
+  </div>
+
+  <!-- ══════════════ SCREEN: SPECIALTY DETAIL ══════════════ -->
+  <div class="screen" id="screen-detail">
+    <div class="detail-header" style="position:relative;">
+      <button class="header-back" onclick="goToSpecialties()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Специальности
+      </button>
+      <button class="fav-btn" id="fav-btn" onclick="toggleFavorite()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="fav-icon"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
+      <div class="detail-code" id="detail-code"></div>
+      <div class="detail-title" id="detail-title"></div>
+      <div class="detail-uni" id="detail-uni"></div>
+    </div>
+    <div class="scroll-area" id="detail-body"></div>
+  </div>
+
+  <!-- ══════════════ SCREEN: FAVORITES ══════════════ -->
+  <div class="screen" id="screen-favorites">
+    <div class="header header-home">
+      <h1>Избранное</h1>
+      <p>Сохранённые специальности</p>
+    </div>
+    <div class="scroll-area" id="fav-list" style="padding-bottom: 80px;"></div>
+  </div>
+
+  <!-- ══════════════ SCREEN: ABOUT ══════════════ -->
+  <div class="screen" id="screen-about">
+    <div class="header header-home">
+      <h1>О приложении</h1>
+    </div>
+    <div class="scroll-area">
+      <div class="about-section">
+        <div class="about-block">
+          <h3>Что это?</h3>
+          <p>Исчерпывающий справочник для абитуриентов Беларуси. Содержит подробную информацию о специальностях ведущих университетов: проходные баллы, дисциплины, перспективы карьеры, объективные плюсы и минусы.</p>
+        </div>
+        <div class="about-block">
+          <h3>Данные</h3>
+          <p>Проходные баллы актуальны на 2024 год. База пополняется: в следующих версиях будут добавлены БНТУ, БГЭУ, МГЛУ, БГМУ и БГУКИ с полным описанием специальностей.</p>
+        </div>
+        <div class="about-block">
+          <h3>Как пользоваться</h3>
+          <p>Выберите университет → факультет → специальность. Все разделы на карточке специальности раскрываются по нажатию. Добавляйте специальности в избранное для быстрого доступа.</p>
+        </div>
+        <div class="about-block">
+          <h3>Версия</h3>
+          <p>1.0.0 — БГУ (3 факультета), БГУИР (3 факультета). Остальные университеты: скоро.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ BOTTOM NAV ══════════════ -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('universities')" id="nav-universities">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">Университеты</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-item" onclick="switchTab('favorites')" id="nav-favorites">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <span class="nav-label">Избранное</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-item" onclick="switchTab('about')" id="nav-about">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span class="nav-label">О боте</span>
+      <div class="nav-dot"></div>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// TELEGRAM INIT
+// ══════════════════════════════════════════════════
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('#ffffff');
+  tg.setBackgroundColor('#ffffff');
+}
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let universities = [];
+let currentUni = null;
+let currentFaculty = null;
+let currentSpecialty = null;
+let currentTab = 'universities';
+let favorites = JSON.parse(localStorage.getItem('fav') || '[]');
+let navStack = []; // for back navigation within detail screen
+
+// ══════════════════════════════════════════════════
+// LOAD DATA
+// ══════════════════════════════════════════════════
+async function loadData() {
+  try {
+    const res = await fetch('./data.json');
+    universities = await res.json();
+    renderUniversities();
+  } catch(e) {
+    document.getElementById('uni-list').innerHTML = '<p style="padding:20px;color:var(--text-3);font-size:14px;">Ошибка загрузки данных. Убедитесь, что data.json находится в той же папке.</p>';
+  }
+}
+
+// ══════════════════════════════════════════════════
+// RENDER: UNIVERSITIES
+// ══════════════════════════════════════════════════
+function renderUniversities(filter = '') {
+  const container = document.getElementById('uni-list');
+  const filtered = universities.filter(u =>
+    u.name.toLowerCase().includes(filter.toLowerCase()) ||
+    u.full_name.toLowerCase().includes(filter.toLowerCase())
+  );
+  container.innerHTML = filtered.map(u => {
+    const totalSpecs = u.faculties.reduce((a, f) => a + f.specialties.length, 0);
+    const isStub = u.faculties.length === 1 && u.faculties[0].specialties.length === 0;
+    return `
+    <div class="uni-card" onclick="openUniversity('${u.id}')">
+      <div class="uni-abbr">${u.name}</div>
+      <div class="uni-info">
+        <div class="uni-name">${u.name}</div>
+        <div class="uni-full">${u.full_name}</div>
+        <div class="uni-meta">Основан ${u.founded} · ${u.city}</div>
+        ${isStub ? '<span class="stub-badge">Скоро</span>' : `<div class="uni-meta">${u.faculties.length} факульт. · ${totalSpecs} специальн.</div>`}
+      </div>
+      <svg class="uni-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('uni-search').addEventListener('input', e => {
+  renderUniversities(e.target.value);
+});
+
+// ══════════════════════════════════════════════════
+// RENDER: FACULTIES
+// ══════════════════════════════════════════════════
+function openUniversity(uniId) {
+  currentUni = universities.find(u => u.id === uniId);
+  document.getElementById('fac-header-title').textContent = currentUni.name;
+  document.getElementById('fac-header-sub').textContent = currentUni.full_name;
+
+  const icons = [
+    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32"/></svg>`,
+  ];
+
+  document.getElementById('fac-list').innerHTML = currentUni.faculties
+    .filter(f => f.specialties.length > 0 || f.name !== 'Данные будут добавлены в следующем обновлении')
+    .map((f, i) => {
+      if (f.specialties.length === 0) return '';
+      return `
+      <div class="faculty-item" onclick="openFaculty('${f.id}')">
+        <div class="faculty-icon">${icons[i % icons.length]}</div>
+        <div class="faculty-info">
+          <div class="faculty-name">${f.name}</div>
+          <div class="faculty-count">${f.specialties.length} специальн.</div>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>`;
+    }).join('') || `<div class="empty-state"><div class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><div class="empty-title">Данные скоро появятся</div><div class="empty-sub">Специальности этого университета в разработке</div></div>`;
+
+  showScreen('faculties');
+}
+
+// ══════════════════════════════════════════════════
+// RENDER: SPECIALTIES
+// ══════════════════════════════════════════════════
+function openFaculty(facId) {
+  currentFaculty = currentUni.faculties.find(f => f.id === facId);
+  document.getElementById('spec-header-title').textContent = currentFaculty.name;
+
+  document.getElementById('spec-list').innerHTML = currentFaculty.specialties.map(s => {
+    const isFav = favorites.includes(s.id);
+    return `
+    <div class="specialty-item" onclick="openSpecialty('${s.id}')">
+      <div class="specialty-code">${s.code}</div>
+      <div class="specialty-name">${s.name}</div>
+      <div class="scores-row">
+        <div class="score-chip budget">
+          <div class="label">Бюджет ${s.passing_scores.year}</div>
+          <div class="value">${s.passing_scores.budget}</div>
+        </div>
+        <div class="score-chip paid">
+          <div class="label">Платное</div>
+          <div class="value">${s.passing_scores.paid}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  showScreen('specialties');
+}
+
+// ══════════════════════════════════════════════════
+// RENDER: SPECIALTY DETAIL
+// ══════════════════════════════════════════════════
+function openSpecialty(specId) {
+  const spec = findSpecialty(specId);
+  if (!spec) return;
+  currentSpecialty = spec;
+
+  document.getElementById('detail-code').textContent = spec.code;
+  document.getElementById('detail-title').textContent = spec.name;
+  document.getElementById('detail-uni').textContent = `${currentUni.name} · ${currentFaculty.name}`;
+
+  updateFavBtn();
+
+  const body = document.getElementById('detail-body');
+  body.innerHTML = '';
+
+  // Scores grid
+  body.innerHTML += `
+    <div class="scores-grid">
+      <div class="score-block budget">
+        <div class="slabel">Бюджет ${spec.passing_scores.year}</div>
+        <div class="svalue">${spec.passing_scores.budget}</div>
+      </div>
+      <div class="score-block">
+        <div class="slabel">Платное</div>
+        <div class="svalue">${spec.passing_scores.paid}</div>
+      </div>
+    </div>`;
+
+  // Difficulty bar
+  const pct = spec.difficulty_level * 10;
+  body.innerHTML += `
+    <div class="difficulty-bar-wrap">
+      <div class="diff-label">Сложность обучения</div>
+      <div class="diff-bar"><div class="diff-fill" style="width:${pct}%"></div></div>
+      <div class="diff-num">${spec.difficulty_level}/10 — ${spec.difficulty_description}</div>
+    </div>`;
+
+  // Accordions
+  const accData = [
+    {
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+      title: 'Фундаментальная база',
+      content: `<p>${spec.fundamental_base}</p>`
+    },
+    {
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+      title: `Дисциплины (${spec.core_disciplines.length})`,
+      content: `<ul>${spec.core_disciplines.map(d => `<li><span class="li-dot neutral"></span><span>${d}</span></li>`).join('')}</ul>`
+    },
+    {
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+      title: `Карьерные пути (${spec.career_prospects.length})`,
+      content: `<ul>${spec.career_prospects.map(c => `<li><span class="li-dot good"></span><span>${c}</span></li>`).join('')}</ul>`
+    },
+    {
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`,
+      title: `Преимущества (${spec.pros.length})`,
+      content: `<ul>${spec.pros.map(p => `<li><span class="li-dot good"></span><span>${p}</span></li>`).join('')}</ul>`
+    },
+    {
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+      title: `Недостатки (${spec.cons.length})`,
+      content: `<ul>${spec.cons.map(c => `<li><span class="li-dot bad"></span><span>${c}</span></li>`).join('')}</ul>`
+    }
+  ];
+
+  accData.forEach((acc, i) => {
+    const id = `acc-${i}`;
+    body.innerHTML += `
+      <div class="accordion">
+        <div class="acc-header" id="${id}-h" onclick="toggleAcc('${id}')">
+          <span class="acc-title">
+            <span class="acc-icon-wrap">${acc.icon}</span>
+            ${acc.title}
+          </span>
+          <svg class="acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="acc-body" id="${id}-b">${acc.content}</div>
+      </div>`;
+  });
+
+  // Open first accordion by default
+  setTimeout(() => {
+    const firstH = document.getElementById('acc-0-h');
+    const firstB = document.getElementById('acc-0-b');
+    if (firstH && firstB) { firstH.classList.add('open'); firstB.classList.add('open'); }
+  }, 50);
+
+  showScreen('detail');
+}
+
+function toggleAcc(id) {
+  const h = document.getElementById(`${id}-h`);
+  const b = document.getElementById(`${id}-b`);
+  h.classList.toggle('open');
+  b.classList.toggle('open');
+}
+
+// ══════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════
+function findSpecialty(specId) {
+  for (const uni of universities) {
+    for (const fac of uni.faculties) {
+      const s = fac.specialties.find(sp => sp.id === specId);
+      if (s) return s;
+    }
+  }
+  return null;
+}
+
+function findContext(specId) {
+  for (const uni of universities) {
+    for (const fac of uni.faculties) {
+      const s = fac.specialties.find(sp => sp.id === specId);
+      if (s) return { uni, fac, spec: s };
+    }
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${name}`).classList.add('active');
+}
+
+function goBack() {
+  showScreen('universities');
+  currentUni = null;
+  currentFaculty = null;
+}
+
+function goToFaculties() {
+  showScreen('faculties');
+}
+
+function goToSpecialties() {
+  showScreen('specialties');
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`nav-${tab}`).classList.add('active');
+
+  if (tab === 'universities') {
+    showScreen('universities');
+  } else if (tab === 'favorites') {
+    renderFavorites();
+    showScreen('favorites');
+  } else if (tab === 'about') {
+    showScreen('about');
+  }
+}
+
+// ══════════════════════════════════════════════════
+// FAVORITES
+// ══════════════════════════════════════════════════
+function toggleFavorite() {
+  if (!currentSpecialty) return;
+  const id = currentSpecialty.id;
+  if (favorites.includes(id)) {
+    favorites = favorites.filter(f => f !== id);
+  } else {
+    favorites.push(id);
+  }
+  localStorage.setItem('fav', JSON.stringify(favorites));
+  updateFavBtn();
+}
+
+function updateFavBtn() {
+  const btn = document.getElementById('fav-btn');
+  const icon = document.getElementById('fav-icon');
+  if (!currentSpecialty) return;
+  const isFav = favorites.includes(currentSpecialty.id);
+  btn.classList.toggle('active', isFav);
+  icon.setAttribute('fill', isFav ? '#e05000' : 'none');
+}
+
+function renderFavorites() {
+  const container = document.getElementById('fav-list');
+  if (favorites.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <div class="empty-title">Нет избранных</div>
+        <div class="empty-sub">Нажмите на значок сердца на странице специальности</div>
+      </div>`;
+    return;
+  }
+  container.innerHTML = favorites.map(id => {
+    const ctx = findContext(id);
+    if (!ctx) return '';
+    return `
+    <div class="fav-item" onclick="openFromFav('${id}')">
+      <div class="fav-item-uni">${ctx.uni.name} · ${ctx.fac.name}</div>
+      <div class="fav-item-name">${ctx.spec.name}</div>
+      <div class="fav-item-score">Бюджет: ${ctx.spec.passing_scores.budget} · Платное: ${ctx.spec.passing_scores.paid}</div>
+    </div>`;
+  }).join('');
+}
+
+function openFromFav(specId) {
+  const ctx = findContext(specId);
+  if (!ctx) return;
+  currentUni = ctx.uni;
+  currentFaculty = ctx.fac;
+  openSpecialty(specId);
+  // Switch nav to universities visually
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-universities').classList.add('active');
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+loadData();
+</script>
+</body>
+</html>
