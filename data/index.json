@@ -16,8 +16,8 @@
     "city": "Минск",
     "founded": 1964,
     "description": "Ведущий технический университет Беларуси в области IT, радиоэлектроники и телекоммуникаций.",
-    "faculty_count": 3,
-    "specialty_count": 5
+    "faculty_count": 6,
+    "specialty_count": 22
   },
   {
     "id": "bntu",
