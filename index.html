@@ -954,7 +954,7 @@
           .fill('<div class="skeleton skeleton-card"></div>')
           .join('')
         try {
-          const res = await fetch('./data/index.json?v=' + Date.now())
+          const res = await fetch('./data/index.json');
           if (!res.ok) throw new Error()
           uniIndex = await res.json()
           renderUniversities()
@@ -972,7 +972,7 @@
 
         document.getElementById('loading-fac').classList.remove('hidden')
         try {
-          const res = await fetch(`./data/${id}.json?v=` + Date.now())
+          const res = await fetch(`./data/${id}.json`);
           if (!res.ok) throw new Error()
           const data = await res.json()
           uniCache[id] = data
