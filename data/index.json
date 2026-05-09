@@ -26,8 +26,8 @@
     "city": "Минск",
     "founded": 1920,
     "description": "Крупнейший технический университет Беларуси. Машиностроение, строительство, энергетика.",
-    "faculty_count": 6,
-    "specialty_count": 9
+    "faculty_count": 5,
+    "specialty_count": 14
   },
   {
     "id": "bseu",
