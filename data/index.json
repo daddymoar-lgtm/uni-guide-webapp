@@ -26,9 +26,8 @@
     "city": "Минск",
     "founded": 1920,
     "description": "Крупнейший технический университет Беларуси. Машиностроение, строительство, энергетика.",
-    "faculty_count": 0,
-    "specialty_count": 0,
-    "coming_soon": true
+    "faculty_count": 6,
+    "specialty_count": 9
   },
   {
     "id": "bseu",
@@ -37,9 +36,8 @@
     "city": "Минск",
     "founded": 1933,
     "description": "Ведущий экономический университет Беларуси. Экономика, финансы, маркетинг, менеджмент.",
-    "faculty_count": 0,
-    "specialty_count": 0,
-    "coming_soon": true
+    "faculty_count": 5,
+    "specialty_count": 9
   },
   {
     "id": "mslu",
@@ -58,9 +56,8 @@
     "city": "Минск",
     "founded": 1921,
     "description": "Главный медицинский университет Беларуси. Подготовка врачей и медицинских специалистов.",
-    "faculty_count": 0,
-    "specialty_count": 0,
-    "coming_soon": true
+    "faculty_count": 6,
+    "specialty_count": 6
   },
   {
     "id": "bguki",
@@ -69,8 +66,7 @@
     "city": "Минск",
     "founded": 1975,
     "description": "Ведущий университет в сфере культуры, искусства, музыки и театра в Беларуси.",
-    "faculty_count": 0,
-    "specialty_count": 0,
-    "coming_soon": true
+    "faculty_count": 5,
+    "specialty_count": 8
   }
 ]
